@@ -1,36 +1,53 @@
-# THEAROM: From Logic Solver to Logic Predator
+# THEAROM: A Fast SAT Solver
 
-She challenged me. I built a DPLL solver. It was okay. It solved things. But then I hit the Pigeonhole Principle ($P(10, 9)$), and the machine started sweating. 12 seconds. That wasn't good enough.
+A high-performance SAT solver implemented from scratch in C++, C, and x86_64 Assembly. It uses a modern CDCL (Conflict-Driven Clause Learning) architecture to solve complex boolean logic problems efficiently.
 
-So I went back into the cellar. I ripped out the recursive heart of the solver and replaced it with a **CDCL (Conflict-Driven Clause Learning)** engine.
+## Features
 
-Now? $P(10, 9)$ takes **0.001s**.
-$P(50, 49)$—a problem that would have taken the old version *literally forever*—is crushed in **81 milliseconds**.
+- **CDCL Engine:** Iterative search with 1-UIP conflict analysis and non-chronological backtracking.
+- **2-Watched Literals:** Efficient unit propagation that avoids scanning every clause on every assignment.
+- **VSIDS Heuristic:** Activity-based variable selection to focus on the most constrained parts of the formula.
+- **Assembly Optimizations:** Core literal checks are hand-rolled in NASM for maximum performance.
+- **Zero Dependencies:** Built entirely from scratch without external libraries.
 
-## The Evolution: DPLL to CDCL
+## Performance
 
-The old version (DPLL) was like a blind man in a maze, backtracking every time he hit a wall.
-The new version (CDCL) is like a cartographer. Every time it hits a wall, it learns *why* that wall exists, writes a new rule (Clause Learning) to never go there again, and jumps back to the last meaningful decision point (Backjumping).
+The solver is optimized for Pigeonhole Principle (PHP) problems and other hard SAT instances:
+- **P(10, 9):** ~0.001s
+- **P(50, 49):** ~81ms
 
-### The Technical Stack (Still Zero Libraries)
+## Building
 
-*   **CDCL Engine (C++):** Iterative search, 1-UIP conflict analysis, and VSIDS branching. No recursion overhead.
-*   **2-Watched Literals (C++):** An industrial-strength propagation technique. We don't scan clauses anymore; we watch them.
-*   **Bitset Logic (C):** Custom memory-mapped bitsets for fast state tracking.
-*   **The Assembly Heart (x86_64):** The most frequent operations—checking if a literal is satisfied or falsified—are still hand-rolled in NASM. Because even with a smart algorithm, you still need raw power.
-
-## How to Run
+You'll need `g++`, `gcc`, and `nasm` installed.
 
 ```bash
 make clean && make
-# Generate a hard problem (e.g., 50 pigeons, 49 holes)
-python3 php.py
-# Watch it disappear
+```
+
+## Usage
+
+The solver accepts standard DIMACS CNF files.
+
+```bash
+./sat_solver tests/sat.cnf
+```
+
+### Testing with Pigeonhole Principle
+
+You can use the included `php.py` script to generate hard test cases:
+
+```bash
+# Generate a 50-pigeon, 49-hole instance
+echo "50 49" | python3 php.py
+
+# Solve it
 time ./sat_solver boss_cnf.cnf
 ```
 
-## The "Human" Part
+## Project Structure
 
-I spent all night on the conflict analysis logic. It's ugly, it's dense, and it works. There are probably a few "dev-only" comments left in the source code. That's fine. It's not academic code anymore; it's code that wins dares.
-
-— *A coder who just won a very expensive dinner.*
+- `src/sat_solver.cpp`: The core CDCL engine and parser.
+- `src/low_level.asm`: x86_64 Assembly optimizations.
+- `src/bitset.c`: Custom C-based bitset for state tracking.
+- `include/`: Header files for all modules.
+- `tests/`: Basic SAT/UNSAT test cases.
