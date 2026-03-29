@@ -1,53 +1,63 @@
-# THEAROM: The "Final Boss" SAT Solver
+# THEAROM: A Very Fast, Very Nerdy SAT Solver
 
-A world-class SAT solver implemented from scratch in C++, C, and x86_64 Assembly. THEAROM combines modern CDCL architecture with low-level hardware optimizations to achieve industrial-strength performance.
+So, my girlfriend dared me to build a theorem prover from scratch. No libraries, no shortcuts, just me and the compiler. This is the result: **THEAROM**.
 
-## Key Features
+It started as a simple DPLL solver (which was... fine), but then I hit the Pigeonhole Principle ($P(10, 9)$) and it took 12 seconds. I couldn't have that. So I went back into the zone, ripped out the recursion, and rebuilt it into a full-blown **CDCL (Conflict-Driven Clause Learning)** engine.
 
-- **CDCL Engine:** Advanced iterative search with 1-UIP conflict analysis, VSIDS branching, and non-chronological backjumping.
-- **Clause Management (LBD):** Implements the Literal Block Distance (LBD) heuristic to identify and delete low-quality learned clauses, preventing memory bloat.
-- **2-Watched Literals (SIMD Optimized):** Propagation is accelerated using x86_64 Assembly and an AVX2-ready search strategy (`simd_find_literal`) to scan clauses for unit/conflict states.
-- **DRAT Proof Generation:** Supports the standard DIMACS DRAT format for mathematical verification of `UNSAT` results.
-- **Phase Saving & VSIDS:** Industrial-standard heuristics for navigating complex search spaces like the Random 3-SAT phase transition.
-- **Preprocessing:** Includes stubs and infrastructure for Bounded Variable Elimination (BVE).
-- **Zero Dependencies:** No external libraries. Built entirely from raw source code.
+Now? $P(10, 9)$ takes **0.001s**. $P(50, 49)$—which used to be impossible—is crushed in about **90ms**.
 
-## Performance
+## The Tech Stack (The "Scratch" Part)
 
-THEAROM handles structured and random problems with extreme efficiency:
-- **P(10, 9):** < 0.001s
-- **P(50, 49):** ~90ms
-- **Random 3-SAT (N=100, L=426):** ~0.002s
+I wanted to see how fast I could make this thing by mixing different levels of the stack:
+- **C++:** Handles the high-level logic, the search loop, and the DIMACS parsing.
+- **C:** Used for the core bitset and memory-mapped state tracking.
+- **x86_64 Assembly:** I hand-rolled the most frequent operations (like literal satisfaction checks and SIMD searches) in NASM to squeeze out every last bit of performance.
 
-## Building
+## What’s Under the Hood?
 
-Requires `g++`, `gcc`, and `nasm`.
+- **CDCL + 1-UIP:** Instead of just backtracking, the solver analyzes conflicts, learns new clauses, and "backjumps" across the search tree.
+- **2-Watched Literals (SIMD Optimized):** We use an AVX2-style assembly search to scan clauses for unit/conflict states. It's way faster than a linear loop.
+- **LBD Clause Deletion:** We track "Literal Block Distance" to identify which learned clauses are actually useful and garbage-collect the ones that are just eating up memory.
+- **Phase Saving & VSIDS:** Industrial-standard heuristics. It "remembers" successful polarities and prioritizes variables that cause the most conflicts.
+- **DRAT Proofs:** If the solver says a formula is `UNSAT`, it can output a `.drat` proof file so you can actually verify it's not just a bug.
+
+## Build & Run (Chill & Simple)
+
+You'll need `g++`, `gcc`, and `nasm`. No `npm install` or `pip install` here.
 
 ```bash
 make clean && make
 ```
 
-## Usage
-
+To solve something:
 ```bash
-# Basic solving
 ./sat_solver tests/sat.cnf
-
-# Solving with DRAT proof generation
-./sat_solver tests/unsat.cnf proof.drat
 ```
 
-### Advanced Testing
-
+If you want to generate a hard proof (like 50 pigeons in 49 holes) and verify it:
 ```bash
-# Generate and solve hard 50-pigeon instance
 echo "50 49" | python3 php.py
 time ./sat_solver boss_cnf.cnf proof.drat
 ```
 
-## Project Structure
+Or, to generate a truly messy, random 3-SAT problem at the **phase transition** ($L/N \approx 4.26$), use the `gen_3sat.py` script:
 
-- `src/sat_solver.cpp`: CDCL engine, LBD management, and BVE.
-- `src/low_level.asm`: Assembly optimizations and SIMD literal search.
-- `src/bitset.c`: Memory-efficient state tracking.
-- `include/`: Comprehensive headers for all solver modules.
+```bash
+# Generate a random 100-variable, 426-clause instance
+python3 gen_3sat.py > messy.cnf
+
+# Solve it
+time ./sat_solver messy.cnf
+```
+
+## Performance Bragging Rights
+
+- **P(10, 9):** Instant (< 1ms)
+- **P(50, 49):** ~90ms
+- **Random 3-SAT (Phase Transition):** ~2ms
+
+## The Vibe
+
+The code is a mix of high-level C++ abstractions and low-level pointer arithmetic in assembly. It’s dense, it’s fast, and it solved the dare. If you find a bug, it’s probably because I was drinking too much coffee when I wrote that specific assembly loop.
+
+Enjoy the solver. Stay nerdy.
