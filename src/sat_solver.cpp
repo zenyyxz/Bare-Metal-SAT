@@ -31,6 +31,7 @@ bool SATSolver::loadDIMACS(const std::string& path) {
             level.assign(numVars + 1, -1);
             reason.assign(numVars + 1, -1);
             activity.assign(numVars + 1, 0.0);
+            phases.assign(numVars + 1, false); // Default to FALSE
             watches.assign((numVars + 1) * 2, std::vector<int>());
             seen.assign(numVars + 1, false);
             
@@ -175,6 +176,7 @@ void SATSolver::cancelUntil(int blevel) {
         trail_lim.pop_back();
         for (size_t i = start; i < trail.size(); i++) {
             int v = std::abs(trail[i]);
+            phases[v] = (trail[i] > 0); // Phase saving
             assigns[v] = Assignment::UNASSIGNED;
             reason[v] = -1;
             level[v] = -1;
@@ -193,7 +195,8 @@ Literal SATSolver::pickBranchingLiteral() {
             best = i;
         }
     }
-    return (best == 0) ? 0 : best;
+    if (best == 0) return 0;
+    return phases[best] ? best : -best;
 }
 
 bool SATSolver::solve() {

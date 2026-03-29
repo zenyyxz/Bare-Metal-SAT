@@ -47,6 +47,7 @@ struct SATSolver {
 
     // Heuristics
     std::vector<double> activity;
+    std::vector<bool> phases; // Phase saving
     double var_inc;
 
     SATSolver() : numVars(0), var_inc(1.0) {}

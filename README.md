@@ -1,20 +1,22 @@
 # THEAROM: A Fast SAT Solver
 
-A high-performance SAT solver implemented from scratch in C++, C, and x86_64 Assembly. It uses a modern CDCL (Conflict-Driven Clause Learning) architecture to solve complex boolean logic problems efficiently.
+A high-performance SAT solver implemented from scratch in C++, C, and x86_64 Assembly. It uses a modern CDCL (Conflict-Driven Clause Learning) architecture with industrial-strength optimizations to solve complex boolean logic problems efficiently.
 
 ## Features
 
 - **CDCL Engine:** Iterative search with 1-UIP conflict analysis and non-chronological backtracking.
 - **2-Watched Literals:** Efficient unit propagation that avoids scanning every clause on every assignment.
 - **VSIDS Heuristic:** Activity-based variable selection to focus on the most constrained parts of the formula.
+- **Phase Saving:** Remembers the last successful polarity of variables to navigate hard Random 3-SAT problems.
 - **Assembly Optimizations:** Core literal checks are hand-rolled in NASM for maximum performance.
 - **Zero Dependencies:** Built entirely from scratch without external libraries.
 
 ## Performance
 
-The solver is optimized for Pigeonhole Principle (PHP) problems and other hard SAT instances:
+The solver is optimized for both structured problems (like Pigeonhole Principle) and random instances:
 - **P(10, 9):** ~0.001s
 - **P(50, 49):** ~81ms
+- **Random 3-SAT (N=100, L=426):** ~0.002s (Phase Transition)
 
 ## Building
 
@@ -34,14 +36,22 @@ The solver accepts standard DIMACS CNF files.
 
 ### Testing with Pigeonhole Principle
 
-You can use the included `php.py` script to generate hard test cases:
-
 ```bash
 # Generate a 50-pigeon, 49-hole instance
 echo "50 49" | python3 php.py
 
 # Solve it
 time ./sat_solver boss_cnf.cnf
+```
+
+### Testing with Random 3-SAT (Phase Transition)
+
+```bash
+# Generate a random 3-SAT instance at L/N = 4.26
+python3 gen_3sat.py > random_3sat.cnf
+
+# Solve it
+time ./sat_solver random_3sat.cnf
 ```
 
 ## Project Structure
