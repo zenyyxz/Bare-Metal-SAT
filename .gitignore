@@ -1,0 +1,20 @@
+# Build artifacts
+obj/
+sat_solver
+
+# Python cache
+__pycache__/
+
+# Generated CNF files (keep the tests/ directory but ignore specific generated ones)
+#boss_cnf.cnf
+boss.cnf
+test.cnf
+
+# Object files and executables
+*.o
+*.out
+
+# OS/IDE specific
+.DS_Store
+.vscode/
+.idea/
