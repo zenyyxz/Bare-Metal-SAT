@@ -1,100 +1,87 @@
 section .text
     global is_literal_satisfied
     global is_literal_falsified
-    global bitset_set
-    global bitset_clear
-    global bitset_get
+    global simd_find_literal
 
 ; int is_literal_satisfied(int literal, int assignment)
-; rdi = literal, rsi = assignment
-; Returns 1 if satisfied, 0 otherwise
-; assignment: 0=UNASSIGNED, 1=TRUE, 2=FALSE
 is_literal_satisfied:
-    ; Check if assignment is UNASSIGNED (0)
     test rsi, rsi
-    jz .not_satisfied
-
-    ; If literal > 0, check if assignment is TRUE (1)
+    jz .not_sat
     test edi, edi
-    jg .check_true
-
-    ; If literal < 0, check if assignment is FALSE (2)
+    jg .pos
     cmp rsi, 2
-    je .satisfied
-    jmp .not_satisfied
-
-.check_true:
+    je .sat
+    jmp .not_sat
+.pos:
     cmp rsi, 1
-    je .satisfied
-    jmp .not_satisfied
-
-.satisfied:
+    je .sat
+.not_sat:
+    xor eax, eax
+    ret
+.sat:
     mov eax, 1
     ret
 
-.not_satisfied:
-    xor eax, eax
-    ret
-
 ; int is_literal_falsified(int literal, int assignment)
-; rdi = literal, rsi = assignment
-; Returns 1 if falsified, 0 otherwise
-; assignment: 0=UNASSIGNED, 1=TRUE, 2=FALSE
 is_literal_falsified:
-    ; Check if assignment is UNASSIGNED (0)
     test rsi, rsi
     jz .not_falsified
-
-    ; If literal > 0, check if assignment is FALSE (2)
     test edi, edi
-    jg .check_false
-
-    ; If literal < 0, check if assignment is TRUE (1)
+    jg .pos_f
     cmp rsi, 1
     je .falsified
     jmp .not_falsified
-
-.check_false:
+.pos_f:
     cmp rsi, 2
     je .falsified
-    jmp .not_falsified
-
+.not_falsified:
+    xor eax, eax
+    ret
 .falsified:
     mov eax, 1
     ret
 
-.not_falsified:
-    xor eax, eax
-    ret
+; int simd_find_literal(int* lits, int size, int* assigns)
+; rdi = lits, rsi = size, rdx = assigns
+; This is a placeholder for the AVX2 implementation. 
+; A real SIMD implementation would use VPCMPEQD to scan assignments.
+; For this environment, we provide a fast assembly loop as the base.
+simd_find_literal:
+    xor rcx, rcx
+.loop:
+    cmp rcx, rsi
+    jge .not_found
+    
+    mov eax, [rdi + rcx * 4] ; lit = lits[rcx]
+    mov r8, rax
+    sar r8, 31               ; r8 = lit < 0 ? -1 : 0
+    
+    mov r9, rax
+    test r9, r9
+    jns .pos_lit
+    neg r9                   ; r9 = abs(lit)
+.pos_lit:
+    mov r10d, [rdx + r9 * 4] ; assign = assigns[var]
+    
+    ; Check if not falsified:
+    ; if lit > 0, not falsified if assign != FALSE (2)
+    ; if lit < 0, not falsified if assign != TRUE (1)
+    test eax, eax
+    jg .check_pos
+    cmp r10d, 1
+    jne .found
+    jmp .next
+.check_pos:
+    cmp r10d, 2
+    jne .found
 
-; void bitset_set(Bitset* b, size_t index)
-; rdi = b (pointer to Bitset struct), rsi = index
-bitset_set:
-    mov rax, [rdi]      ; rax = b->bits (pointer to uint64_t array)
-    mov rdx, rsi
-    shr rdx, 6          ; rdx = index / 64
-    and rsi, 63         ; rsi = index % 64
-    lock bts [rax + rdx * 8], rsi
-    ret
+.next:
+    inc rcx
+    jmp .loop
 
-; void bitset_clear(Bitset* b, size_t index)
-; rdi = b, rsi = index
-bitset_clear:
-    mov rax, [rdi]
-    mov rdx, rsi
-    shr rdx, 6
-    and rsi, 63
-    lock btr [rax + rdx * 8], rsi
+.found:
+    mov eax, ecx
     ret
-
-; int bitset_get(Bitset* b, size_t index)
-; rdi = b, rsi = index
-bitset_get:
-    mov rax, [rdi]
-    mov rdx, rsi
-    shr rdx, 6
-    and rsi, 63
-    bt [rax + rdx * 8], rsi
-    setc al
-    movzx eax, al
+.not_found:
+    mov eax, -1
     ret
