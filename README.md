@@ -1,6 +1,6 @@
 # THEAROM: A Very Fast, Very Nerdy SAT Solver
 
-So, my girlfriend dared me to build a theorem prover from scratch. No libraries, no shortcuts, just me and the compiler. This is the result: **THEAROM**.
+I built a theorem prover from scratch. No libraries, no shortcuts, just me and the compiler. This is the result: **THEAROM**.
 
 It started as a simple DPLL solver (which was... fine), but then I hit the Pigeonhole Principle ($P(10, 9)$) and it took 12 seconds. I couldn't have that. So I went back into the zone, ripped out the recursion, and rebuilt it into a full-blown **CDCL (Conflict-Driven Clause Learning)** engine.
 
@@ -58,6 +58,6 @@ time ./sat_solver messy.cnf
 
 ## The Vibe
 
-The code is a mix of high-level C++ abstractions and low-level pointer arithmetic in assembly. It’s dense, it’s fast, and it solved the dare. If you find a bug, it’s probably because I was drinking too much coffee when I wrote that specific assembly loop.
+The code is a mix of high-level C++ abstractions and low-level pointer arithmetic in assembly. It’s dense and it’s fast. If you find a bug, it’s probably because I was drinking too much coffee when I wrote that specific assembly loop.
 
 Enjoy the solver. Stay nerdy.
